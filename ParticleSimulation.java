@@ -7,14 +7,14 @@ import javax.swing.*;
 
 class Particle {
 
-    VectorParticle position, velocity;
+    Vector position, velocity;
     double diameter, gravity, mass;
     Color color, temp;
     double elasticity, object;
     double spin;
     boolean highlight;
 
-    public Particle(VectorParticle position, VectorParticle velocity, Color color, double diameter, double gravity,
+    public Particle(Vector position, Vector velocity, Color color, double diameter, double gravity,
             double elasticity,
             double object) {
         this.position = position;
@@ -82,13 +82,13 @@ class Particle {
     public void collide(Particle p) {
         if (object == 0 && p.object == 0 || object == 2 && p.object == 2 || object == 0 && p.object == 2
                 || p.object == 0 && object == 2) {
-            VectorParticle pCenter = position.add((new VectorParticle(diameter / 2, diameter / 2)));
-            VectorParticle ppCenter = p.position.add((new VectorParticle(p.diameter / 2, p.diameter / 2)));
+            Vector pCenter = position.add((new Vector(diameter / 2, diameter / 2)));
+            Vector ppCenter = p.position.add((new Vector(p.diameter / 2, p.diameter / 2)));
             double distance = pCenter.distance(ppCenter);
             if (distance < (diameter + p.diameter) / 2) {
                 // Resolve collision
-                VectorParticle normal = position.subtract(p.position).normalize();
-                VectorParticle relativeVelocity = velocity.subtract(p.velocity);
+                Vector normal = position.subtract(p.position).normalize();
+                Vector relativeVelocity = velocity.subtract(p.velocity);
                 double speed = relativeVelocity.dot(normal);
 
                 double impulse = (2 * speed) / (mass + p.mass);
@@ -101,16 +101,16 @@ class Particle {
                 p.position = p.position.subtract(normal.scale(overlap / 2));
             }
         } else if (object == 1 && p.object == 0 || p.object == 1 && p.object == 3 || object == 4 && p.object == 0 || p.object == 4 && p.object == 3) {
-            VectorParticle pCenter = position.add((new VectorParticle(diameter / 2, diameter / 2)));
+            Vector pCenter = position.add((new Vector(diameter / 2, diameter / 2)));
             pCenter = pCenter.axis(spin);
-            VectorParticle ppCenter = p.position.add((new VectorParticle(p.diameter / 2, p.diameter / 2)));
+            Vector ppCenter = p.position.add((new Vector(p.diameter / 2, p.diameter / 2)));
             ppCenter = ppCenter.axis(spin);
-            VectorParticle distance = pCenter.subtract(ppCenter);
+            Vector distance = pCenter.subtract(ppCenter);
             if (Math.abs(distance.y) < (diameter + p.diameter) / 2
                     && Math.abs(distance.x) < (diameter + p.diameter) / 2) {
                 // Resolve collision
-                VectorParticle normal = position.subtract(p.position).normalize();
-                VectorParticle relativeVelocity = velocity.subtract(p.velocity);
+                Vector normal = position.subtract(p.position).normalize();
+                Vector relativeVelocity = velocity.subtract(p.velocity);
                 double speed = relativeVelocity.dot(normal);
 
                 double impulse = (2 * speed) / (mass + p.mass);
@@ -125,21 +125,21 @@ class Particle {
                     // double correctionY = overlapY / 2;
                     double correctionY = overlapY;
                     if (distance.y > 0) {
-                        // position = position.add(new VectorParticle(0, correctionY));
-                        p.position = p.position.subtract(new VectorParticle(0, correctionY));
+                        // position = position.add(new Vector(0, correctionY));
+                        p.position = p.position.subtract(new Vector(0, correctionY));
                     } else {
-                        // position = position.subtract(new VectorParticle(0, correctionY));
-                        p.position = p.position.add(new VectorParticle(0, correctionY));
+                        // position = position.subtract(new Vector(0, correctionY));
+                        p.position = p.position.add(new Vector(0, correctionY));
                     }
                 } else if (Math.abs(distance.x) > Math.abs(distance.y)) {
                     // double correctionX = overlapX / 2;
                     double correctionX = overlapX * 1.1;
                     if (distance.x > 0) {
-                        // position = position.add(new VectorParticle(correctionX, 0));
-                        p.position = p.position.subtract(new VectorParticle(correctionX, 0));
+                        // position = position.add(new Vector(correctionX, 0));
+                        p.position = p.position.subtract(new Vector(correctionX, 0));
                     } else {
-                        // position = position.subtract(new VectorParticle(correctionX, 0));
-                        p.position = p.position.add(new VectorParticle(correctionX, 0));
+                        // position = position.subtract(new Vector(correctionX, 0));
+                        p.position = p.position.add(new Vector(correctionX, 0));
                     }
                 }
 
@@ -203,17 +203,17 @@ class Particle {
         }
     }
 
-    public void selected(VectorParticle s1, VectorParticle s2) {
+    public void selected(Vector s1, Vector s2) {
         if (ParticleCanvas.shift) {
 
-            VectorParticle pCenter = position.add((new VectorParticle(diameter / 2, diameter / 2)));
+            Vector pCenter = position.add((new Vector(diameter / 2, diameter / 2)));
             // pCenter=pCenter.axis(spin);
-            VectorParticle sCenter = new VectorParticle(s1.x + .5 * (s2.x - s1.x), s1.y + .5 * (s2.y - s1.y));
+            Vector sCenter = new Vector(s1.x + .5 * (s2.x - s1.x), s1.y + .5 * (s2.y - s1.y));
 
             // sCenter=sCenter.axis(1);
             double sdiametery = Math.abs(s1.y - s2.y);
             double sdiameterx = Math.abs(s1.x - s2.x);
-            VectorParticle distance = pCenter.subtract(sCenter);
+            Vector distance = pCenter.subtract(sCenter);
             if (Math.abs(distance.y) < (diameter + sdiametery) / 2
                     && Math.abs(distance.x) < (diameter + sdiameterx) / 2) {
                 highlight = true;
@@ -326,58 +326,6 @@ class Keysss extends JPanel implements KeyListener {
     }
 }
 
-class VectorParticle {
-
-    double x, y;
-
-    public VectorParticle(double x, double y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    public VectorParticle add(VectorParticle v) {
-        return new VectorParticle(x + v.x, y + v.y);
-    }
-
-    public VectorParticle add(double d) {
-        return new VectorParticle(x + d, y + d);
-    }
-
-    public VectorParticle subtract(VectorParticle v) {
-        return new VectorParticle(x - v.x, y - v.y);
-    }
-
-    public VectorParticle scale(double scalar) {
-        return new VectorParticle(x * scalar, y * scalar);
-    }
-
-    public VectorParticle mult(VectorParticle v) {
-        return new VectorParticle(x * v.x, y * v.y);
-    }
-
-    public double dot(VectorParticle v) {
-        return x * v.x + y * v.y;
-    }
-
-    public double magnitude() {
-        return Math.sqrt(x * x + y * y);
-    }
-
-    public VectorParticle normalize() {
-        double mag = magnitude();
-        return new VectorParticle(x / mag, y / mag);
-    }
-
-    public VectorParticle axis(double a) {
-        a = -a;
-        return new VectorParticle(x * Math.cos(a) + y * Math.sin(a), y * Math.cos(a) - x * Math.sin(a));
-    }
-
-    public double distance(VectorParticle v) {
-        return Math.sqrt(Math.pow(x - v.x, 2) + Math.pow(y - v.y, 2));
-    }
-}
-
 class ParticleCanvas extends JPanel {
 
     static ArrayList<Particle> particles = new ArrayList<>();
@@ -388,13 +336,13 @@ class ParticleCanvas extends JPanel {
     double vy = -1;
     static double object = 0;
     static int arrow;
-    VectorParticle position = new VectorParticle(0, 0);
-    VectorParticle positionm = new VectorParticle(0, 0);
-    VectorParticle positions = new VectorParticle(0, 0);
+    Vector position = new Vector(0, 0);
+    Vector positionm = new Vector(0, 0);
+    Vector positions = new Vector(0, 0);
     Color colorm;
     int diameter = 20;
-    VectorParticle select1 = new VectorParticle(0, 0);
-    VectorParticle select2 = new VectorParticle(0, 0);
+    Vector select1 = new Vector(0, 0);
+    Vector select2 = new Vector(0, 0);
     static boolean shift, delete, space;
 
     public ParticleCanvas() {
@@ -411,9 +359,9 @@ class ParticleCanvas extends JPanel {
             public void mouseMoved(MouseEvent e) {
                     if (space) {
                         
-                        positionm = new VectorParticle(e.getX(), e.getY());
-                        positions = new VectorParticle(e.getX(), e.getY());
-                        select1 = new VectorParticle(e.getX(), e.getY());
+                        positionm = new Vector(e.getX(), e.getY());
+                        positions = new Vector(e.getX(), e.getY());
+                        select1 = new Vector(e.getX(), e.getY());
                         colorm = Color.BLACK;
                     }
 
@@ -423,7 +371,7 @@ class ParticleCanvas extends JPanel {
                 public void mouseDragged(MouseEvent e) {
                     if (space) {
 
-                    positions = new VectorParticle(e.getX(), e.getY());
+                    positions = new Vector(e.getX(), e.getY());
                     }
                 }
 
@@ -434,10 +382,10 @@ class ParticleCanvas extends JPanel {
                 public void mousePressed(MouseEvent e) {
                     if (space) {
 
-                    position = new VectorParticle(e.getX(), e.getY());
+                    position = new Vector(e.getX(), e.getY());
                     if (shift) {
                         System.out.println("NOOOOOOOOOOOO");
-                        select1 = new VectorParticle(e.getX(), e.getY());
+                        select1 = new Vector(e.getX(), e.getY());
 
                     }
                 }}
@@ -447,7 +395,7 @@ class ParticleCanvas extends JPanel {
                     if (space) {
 
                     if (!shift) {
-                        position = new VectorParticle(e.getX(), e.getY());
+                        position = new Vector(e.getX(), e.getY());
                     }
                 }}
 
@@ -455,56 +403,56 @@ class ParticleCanvas extends JPanel {
                 public void mouseReleased(MouseEvent e) {
                     if (space) {
 
-                    select2 = new VectorParticle(e.getX(), e.getY());
-                    VectorParticle velocity = select2.subtract(position);
-                    velocity = new VectorParticle(velocity.x * 0.1, velocity.y * 0.1);
+                    select2 = new Vector(e.getX(), e.getY());
+                    Vector velocity = select2.subtract(position);
+                    velocity = new Vector(velocity.x * 0.1, velocity.y * 0.1);
                     if (!shift) {
                         for (Particle p : particles) {
                             p.highlight = false;
                         }
 
                         if (object == 0) {
-                            // VectorParticle velocity = new VectorParticle(random.nextDouble() * 8 - 4,
+                            // Vector velocity = new Vector(random.nextDouble() * 8 - 4,
                             // random.nextDouble()
                             // * 8 - 4);
 
                             Color color = new Color(random.nextInt(255), random.nextInt(255), random.nextInt(255));
                             particles.add(
-                                    new Particle(position.add(new VectorParticle(random.nextInt(2),random.nextInt(1))), velocity, color, diameter, gravity, elasticity, object));
+                                    new Particle(position.add(new Vector(random.nextInt(2),random.nextInt(1))), velocity, color, diameter, gravity, elasticity, object));
                             vx += 0.1;
                             vy += 0.1;
                         }
                         if (object == 1) {
-                            // VectorParticle velocity = new VectorParticle(random.nextDouble() * 8 - 4,
+                            // Vector velocity = new Vector(random.nextDouble() * 8 - 4,
                             // random.nextDouble()
                             // * 8 - 4);
 
                             Color color = new Color(random.nextInt(255), random.nextInt(255), random.nextInt(255));
                             particles.add(
-                                    new Particle(position.add(new VectorParticle(random.nextInt(2),random.nextInt(1))), velocity, color, diameter, gravity, elasticity, object));
+                                    new Particle(position.add(new Vector(random.nextInt(2),random.nextInt(1))), velocity, color, diameter, gravity, elasticity, object));
                             vx -= 0.1;
                             vy -= 0.1;
 
                         }
                         if (object == 2) {
-                            // VectorParticle velocity = new VectorParticle(random.nextDouble() * 8 - 4,
+                            // Vector velocity = new Vector(random.nextDouble() * 8 - 4,
                             // random.nextDouble()
                             // * 8 - 4);
 
                             Color color = new Color(random.nextInt(255), random.nextInt(255), random.nextInt(255));
                             particles.add( 
-                                    new Particle(position.add(new VectorParticle(random.nextInt(2),random.nextInt(1))), velocity, color, 2 * diameter, gravity, elasticity, object));
+                                    new Particle(position.add(new Vector(random.nextInt(2),random.nextInt(1))), velocity, color, 2 * diameter, gravity, elasticity, object));
                             vx += 0.1;
                             vy += 0.1;
                         }
                         if (object == 3) {
-                            // VectorParticle velocity = new VectorParticle(random.nextDouble() * 8 - 4,
+                            // Vector velocity = new Vector(random.nextDouble() * 8 - 4,
                             // random.nextDouble()
                             // * 8 - 4);
 
                             Color color = new Color(random.nextInt(255), random.nextInt(255), random.nextInt(255));
                             particles.add(
-                                    new Particle(position.add(new VectorParticle(random.nextInt(2),random.nextInt(1))), velocity, color, 2 * diameter, gravity, elasticity, object));
+                                    new Particle(position.add(new Vector(random.nextInt(2),random.nextInt(1))), velocity, color, 2 * diameter, gravity, elasticity, object));
                             vx += 0.1;
                             vy += 0.1;
                         }
