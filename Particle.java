@@ -13,9 +13,10 @@ public class Particle {
     double spin;
     boolean highlight;
 
+    private static final Random random = new Random();
+
     public Particle(Vector position, Vector velocity, Color color, double diameter, double gravity,
-            double elasticity,
-            double object) {
+                    double elasticity, double object) {
         this.position = position;
         this.velocity = velocity;
         this.color = color;
@@ -24,53 +25,44 @@ public class Particle {
         this.gravity = gravity;
         this.elasticity = elasticity;
         this.object = object;
-        Random random = new Random();
         this.spin = random.nextDouble();
+
+        // Estimate mass based on shape type
+        if (object == 0 || object == 2) {
+            this.mass = Math.pow(diameter, 2) * 0.25 * Math.PI;
+        } else {
+            this.mass = Math.pow(diameter, 2);
+        }
+        
     }
 
     public void show(Graphics2D g) {
+        g.setColor(color);
+        int size = (int) diameter;
+
         if (object == 0 || object == 2) {
-            g.setColor(color);
-            g.fillOval((int) position.x, (int) position.y, (int) diameter, (int) diameter);
-            mass = Math.pow(diameter, 2) * .25 * Math.PI;
+            g.fillOval((int) position.x, (int) position.y, size, size);
             highlight(g);
-        }
-        if (object == 1 || object == 3) {
-            spin = 0;
-            g.setColor(color);
-            int size = (int) diameter; // Assuming diameter is the square's side length
-            // spin +=1;
-            double angle = Math.toRadians(spin); // Rotation angle
-
-            // Calculate rotated corners relative to the center
+        } else if (object == 1 || object == 3) {
+            // Rotated square using basic rotation matrix
+            double angle = Math.toRadians(spin);
             double halfSize = size / 2.0;
-            double quarterSize = size / 2.0;
-
             double cosA = Math.cos(angle);
             double sinA = Math.sin(angle);
 
             int[] xPoints = new int[4];
             int[] yPoints = new int[4];
 
-            xPoints[0] = (int) (position.x + halfSize + (-halfSize * cosA - (-halfSize) * sinA));
-            yPoints[0] = (int) (position.y + halfSize + (-halfSize * sinA + (-halfSize) * cosA));
+            for (int i = 0; i < 4; i++) {
+                double dx = (i == 1 || i == 2) ? halfSize : -halfSize;
+                double dy = (i >= 2) ? halfSize : -halfSize;
 
-            xPoints[1] = (int) (position.x + quarterSize + (quarterSize * cosA - (-quarterSize) * sinA));
-            yPoints[1] = (int) (position.y + quarterSize + (quarterSize * sinA + (-quarterSize) * cosA));
+                xPoints[i] = (int) (position.x + halfSize + dx * cosA - dy * sinA);
+                yPoints[i] = (int) (position.y + halfSize + dx * sinA + dy * cosA);
+            }
 
-            xPoints[2] = (int) (position.x + halfSize + (halfSize * cosA - halfSize * sinA));
-            yPoints[2] = (int) (position.y + halfSize + (halfSize * sinA + halfSize * cosA));
-
-            xPoints[3] = (int) (position.x + halfSize + (-halfSize * cosA - halfSize * sinA));
-            yPoints[3] = (int) (position.y + halfSize + (-halfSize * sinA + halfSize * cosA));
-
-            // Draw the rotated square
             g.fillPolygon(xPoints, yPoints, 4);
-
-            mass = Math.pow(diameter, 2);
-
         }
-        mass /= 4;
     }
 
     public void gravityShift() {
@@ -79,99 +71,75 @@ public class Particle {
     }
 
     public void collide(Particle p) {
-        if (object == 0 && p.object == 0 || object == 2 && p.object == 2 || object == 0 && p.object == 2
-                || p.object == 0 && object == 2) {
-            Vector pCenter = position.add((new Vector(diameter / 2, diameter / 2)));
-            Vector ppCenter = p.position.add((new Vector(p.diameter / 2, p.diameter / 2)));
-            double distance = pCenter.distance(ppCenter);
-            if (distance < (diameter + p.diameter) / 2) {
-                // Resolve collision
-                Vector normal = position.subtract(p.position).normalize();
-                Vector relativeVelocity = velocity.subtract(p.velocity);
-                double speed = relativeVelocity.dot(normal);
+        // Circle-circle collision
+        if (object % 2 == 0 && p.object % 2 == 0 && object <= p.object) {
+            Vector center1 = position.add(new Vector(diameter / 2, diameter / 2));
+            Vector center2 = p.position.add(new Vector(p.diameter / 2, p.diameter / 2));
+            double distance = center1.distance(center2);
+            double minDistance = (diameter + p.diameter) / 2;
 
-                double impulse = (2 * speed) / (mass + p.mass);
-                velocity = velocity.subtract(normal.scale(elasticity * impulse * p.mass));
-                p.velocity = p.velocity.add(normal.scale(elasticity * impulse * mass));
+            if (distance < minDistance) {
+                Vector normal = center1.subtract(center2).normalize();
+                Vector relativeVel = velocity.subtract(p.velocity);
 
-                // Separate overlapping particles
-                double overlap = (diameter + p.diameter) / 2 - distance*.99;
-                position = position.add(normal.scale(overlap / 2));
-                p.position = p.position.subtract(normal.scale(overlap / 2));
-            }
-        } else if (object == 1 && p.object == 0 || p.object == 1 && p.object == 2 || object == 3 && p.object == 2 || p.object == 3 && p.object == 4) {
-            Vector pCenter = position.add((new Vector(diameter / 2, diameter / 2)));
-            pCenter = pCenter.axis(spin);
-            Vector ppCenter = p.position.add((new Vector(p.diameter / 2, p.diameter / 2)));
-            ppCenter = ppCenter.axis(spin);
-            Vector distance = pCenter.subtract(ppCenter);
-            if (Math.abs(distance.y) < (diameter + p.diameter) / 2
-                    && Math.abs(distance.x) < (diameter + p.diameter) / 2) {
-                // Resolve collision
-                Vector normal = position.subtract(p.position).normalize();
-                Vector relativeVelocity = velocity.subtract(p.velocity);
-                double speed = relativeVelocity.dot(normal);
-
-                double impulse = (2 * speed) / (mass + p.mass);
-                // velocity = velocity.subtract(normal.scale(elasticity*impulse * p.mass));
-                p.velocity = p.velocity.add(normal.scale(elasticity * impulse * mass));
-                // Separate overlapping particles
-                // Separate overlapping particles
-                double overlapX = (diameter + p.diameter) / 2 - Math.abs(distance.x);
-                double overlapY = (diameter + p.diameter) / 2 - Math.abs(distance.y);
-
-                if (Math.abs(distance.y) > Math.abs(distance.x)) {
-                    // double correctionY = overlapY / 2;
-                    double correctionY = overlapY;
-                    if (distance.y > 0) {
-                        // position = position.add(new Vector(0, correctionY));
-                        p.position = p.position.subtract(new Vector(0, correctionY));
-                    } else {
-                        // position = position.subtract(new Vector(0, correctionY));
-                        p.position = p.position.add(new Vector(0, correctionY));
-                    }
-                } else if (Math.abs(distance.x) > Math.abs(distance.y)) {
-                    // double correctionX = overlapX / 2;
-                    double correctionX = overlapX * 1.1;
-                    if (distance.x > 0) {
-                        // position = position.add(new Vector(correctionX, 0));
-                        p.position = p.position.subtract(new Vector(correctionX, 0));
-                    } else {
-                        // position = position.subtract(new Vector(correctionX, 0));
-                        p.position = p.position.add(new Vector(correctionX, 0));
-                    }
+                // Apply impulse only if particles are moving toward each other
+                if (relativeVel.dot(normal) < 0) {
+                    double impulse = (2 * relativeVel.dot(normal)) / (mass + p.mass);
+                    velocity = velocity.subtract(normal.scale(elasticity * impulse * p.mass));
+                    p.velocity = p.velocity.add(normal.scale(elasticity * impulse * mass));
                 }
 
+                // Overlap correction: push particles apart equally
+                double overlap = minDistance - distance;
+                Vector correction = normal.scale(overlap * 0.5);
+                position = position.add(correction);
+                p.position = p.position.subtract(correction);
+
+                // Basic friction when resting vertically
+                if (Math.abs(velocity.y) < 0.1) velocity.x *= 0.9;
+                if (Math.abs(p.velocity.y) < 0.1) p.velocity.x *= 0.9;
+            }
+
+        // Square-circle collision
+        } else if (object % 2 == 1 && p.object % 2 == 0) {
+            Vector circleCenter = p.position.add(new Vector(p.diameter / 2, p.diameter / 2));
+
+            // Clamp circle center to square bounds
+            double clampedX = Math.max(position.x, Math.min(circleCenter.x, position.x + diameter));
+            double clampedY = Math.max(position.y, Math.min(circleCenter.y, position.y + diameter));
+            Vector closest = new Vector(clampedX, clampedY);
+
+            Vector penetration = circleCenter.subtract(closest);
+            double penetrationDist = penetration.magnitude();
+
+            if (penetrationDist < p.diameter / 2) {
+                Vector normal = penetration.normalize();
+
+                // Simple vertical bounce for top surface
+                if (Math.abs(normal.x) < 0.5 && p.velocity.dot(normal) < 0) {
+                    p.velocity = new Vector(p.velocity.x, -p.velocity.y * elasticity);
+
+                    double overlap = (p.diameter / 2) - penetrationDist;
+                    p.position = p.position.add(normal.scale(normal.y > 0 ? overlap : -overlap));
+                }
             }
         }
     }
 
     public void update(int width, int height, ArrayList<Particle> particles) {
         if (highlight) {
-            if (ParticleCanvas.arrow == 1) {
-                this.position.y += -5;
-                
+            switch (ParticleCanvas.arrow) {
+                case 1 -> this.position.y -= 5;
+                case 2 -> this.position.y += 5;
+                case 3 -> this.position.x -= 5;
+                case 4 -> this.position.x += 5;
             }
-            else if (ParticleCanvas.arrow == 2) {
-                this.position.y += 5;
-                
-            }
-            else if (ParticleCanvas.arrow == 3) {
-                this.position.x += -5;
-                
-            }
-            else if (ParticleCanvas.arrow == 4) {
-                this.position.x -= -5;
-                
-            }
-        }
-        else if (object == 0 || object == 2) {
+        } else if (object == 0 || object == 2) {
             gravityShift();
         }
-        // Bounce off walls
 
-        if (object == 0 || object == 2 || object == 1 || object == 3) {
-
+        // Wall collisions
+        if (object >= 0 && object <= 3) {
             if (position.x < 0 || position.x + diameter > width) {
                 velocity.x *= -elasticity;
                 position.x = Math.max(0, Math.min(position.x, width - diameter));
@@ -182,11 +150,9 @@ public class Particle {
                 position.y = Math.max(0, Math.min(position.y, height - diameter));
             }
 
-            // Check for collisions with other particles
+            // Check particle-particle collisions
             for (Particle p : particles) {
-                if (p != this) {
-                    this.collide(p);
-                }
+                if (p != this) collide(p);
             }
         }
     }
@@ -196,7 +162,6 @@ public class Particle {
             g.setColor(Color.BLACK);
             g.drawOval((int) position.x, (int) position.y, (int) diameter, (int) diameter);
             color = Color.BLACK;
-
         } else {
             color = temp;
         }
@@ -204,21 +169,15 @@ public class Particle {
 
     public void selected(Vector s1, Vector s2) {
         if (ParticleCanvas.shift) {
+            Vector pCenter = position.add(new Vector(diameter / 2, diameter / 2));
+            Vector sCenter = s1.add(s2.subtract(s1).scale(0.5));
+            double dx = Math.abs(s1.x - s2.x) / 2 + diameter / 2;
+            double dy = Math.abs(s1.y - s2.y) / 2 + diameter / 2;
 
-            Vector pCenter = position.add((new Vector(diameter / 2, diameter / 2)));
-            // pCenter=pCenter.axis(spin);
-            Vector sCenter = new Vector(s1.x + .5 * (s2.x - s1.x), s1.y + .5 * (s2.y - s1.y));
-
-            // sCenter=sCenter.axis(1);
-            double sdiametery = Math.abs(s1.y - s2.y);
-            double sdiameterx = Math.abs(s1.x - s2.x);
-            Vector distance = pCenter.subtract(sCenter);
-            if (Math.abs(distance.y) < (diameter + sdiametery) / 2
-                    && Math.abs(distance.x) < (diameter + sdiameterx) / 2) {
+            Vector diff = pCenter.subtract(sCenter);
+            if (Math.abs(diff.x) < dx && Math.abs(diff.y) < dy) {
                 highlight = true;
             }
         }
-
     }
-
 }
